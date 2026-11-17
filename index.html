@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#2563eb"><link rel="manifest" href="manifest.webmanifest">
+<link rel="stylesheet" href="styles.css"><title>My Route</title>
+</head>
+<body>
+<header><div class="brand"><span class="pin">●</span><div><h1>My Route</h1><p>Your personal delivery planner</p></div></div><button id="locateBtn" class="secondary">Use my location</button></header>
+<main>
+<section class="stats"><div><strong id="totalCount">0</strong><span>Total stops</span></div><div><strong id="doneCount">0</strong><span>Completed</span></div><div><strong id="remainingCount">0</strong><span>Remaining</span></div></section>
+<section class="panel">
+<h2>Start point</h2><p id="startStatus" class="muted">Your current location has not been set.</p>
+<div class="row"><input id="startAddress" placeholder="Or enter a start / depot address"><button id="saveStartBtn">Save</button></div>
+</section>
+<section class="panel">
+<h2>Add deliveries</h2><p class="muted">Add one address per line, or import a CSV file with an Address column.</p>
+<textarea id="bulkAddresses" rows="4" placeholder="123 Main St, Brampton, ON&#10;45 King St W, Toronto, ON"></textarea>
+<div class="row wrap"><button id="addBulkBtn">Add addresses</button><label class="filebtn">Import CSV<input id="csvFile" type="file" accept=".csv,text/csv"></label><button id="exportBtn" class="secondary">Export CSV</button></div>
+<p id="importStatus" class="muted" role="status"></p>
+</section>
+<section class="panel">
+<div class="row between"><h2>Delivery stops</h2><button id="clearDoneBtn" class="secondary small">Remove completed</button></div>
+<input id="filterInput" placeholder="Search addresses…">
+<ol id="stopList" class="stops"></ol>
+<p id="emptyState" class="muted">No stops yet. Add addresses above to begin.</p>
+</section>
+<section class="panel">
+<h2>Route actions</h2>
+<p class="muted">This starter version keeps your stop list and completion status on this device. Road-aware optimization for 200+ stops is the next build step and needs a routing service plus a server-side optimizer.</p>
+<div class="row wrap"><button id="navigateBtn">Navigate to next stop</button><button id="saveRouteBtn" class="secondary">Save this route</button></div>
+<p id="routeStatus" class="muted" role="status"></p>
+</section>
+<section class="panel">
+<h2>Saved routes</h2><ul id="savedRoutes" class="saved"></ul>
+</section>
+</main>
+<footer>Private starter app · Data is stored in this browser on this device.</footer>
+<script src="app.js"></script>
+</body></html>
