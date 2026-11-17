@@ -1,0 +1,9 @@
+{
+  "name": "My Route Delivery Planner",
+  "short_name": "My Route",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#f4f7fc",
+  "theme_color": "#2563eb",
+  "icons": []
+}
