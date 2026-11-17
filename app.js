@@ -11,8 +11,11 @@ const persist = () => {
 };
 
 const esc = s => String(s).replace(/[&<>"']/g, c => ({
-  '&':'&amp;', '<':'&lt;', '>':'&gt;',
-  '"':'&quot;', "'":'&#39;'
+  '&': '&amp;',
+  '<': '&lt;',
+  '>': '&gt;',
+  '"': '&quot;',
+  "'": '&#39;'
 }[c]));
 
 function render() {
@@ -21,10 +24,12 @@ function render() {
   $("totalCount").textContent = stops.length;
   $("doneCount").textContent = done;
   $("remainingCount").textContent = stops.length - done;
-  $("startStatus").textContent = start?.label || "Your current location has not been set.";
+  $("startStatus").textContent =
+    start?.label || "Your current location has not been set.";
 
   const q = $("filterInput").value.toLowerCase();
-  const visible = stops.map((s, i) => ({...s, i}))
+
+  const visible = stops.map((s, i) => ({ ...s, i }))
     .filter(s => s.address.toLowerCase().includes(q));
 
   $("stopList").innerHTML = visible.map(s => `
@@ -85,6 +90,7 @@ function addAddresses(lines) {
   }
 
   persist();
+
   $("importStatus").textContent =
     `Added ${added} new address(es). ${stops.length} total stops.`;
 }
@@ -135,33 +141,89 @@ $("stopList").onchange = e => {
 function navigate(address) {
   const url = "https://www.google.com/maps/dir/?api=1&destination="
     + encodeURIComponent(address) + "&travelmode=driving";
+
   window.open(url, "_blank", "noopener");
 }
 
+// Navigate through unfinished deliveries only.
+// Your saved start/depot address is never added as a delivery.
 $("navigateBtn").onclick = () => {
-  const next = stops.find(s => !s.done);
-  if (!next) {
-    $("routeStatus").textContent = "All deliveries are completed.";
+  const remaining = stops.filter(s => !s.done);
+
+  if (!remaining.length) {
+    $("routeStatus").textContent =
+      "All deliveries are completed.";
     return;
   }
-  navigate(next.address);
+
+  if (!navigator.geolocation) {
+    $("routeStatus").textContent =
+      "Location is not supported by this browser.";
+    return;
+  }
+
+  $("routeStatus").textContent =
+    "Getting your current location...";
+
+  navigator.geolocation.getCurrentPosition(position => {
+    const origin =
+      `${position.coords.latitude},${position.coords.longitude}`;
+
+    // Google Maps route batch: up to 4 deliveries.
+    const batch = remaining.slice(0, 4);
+
+    const destination = batch[batch.length - 1].address;
+
+    const waypoints = batch
+      .slice(0, -1)
+      .map(s => s.address)
+      .join("|");
+
+    const params = new URLSearchParams({
+      api: "1",
+      origin,
+      destination,
+      travelmode: "driving"
+    });
+
+    if (waypoints) {
+      params.set("waypoints", waypoints);
+    }
+
+    $("routeStatus").textContent =
+      `Opening route for ${batch.length} deliveries.`;
+
+    window.location.href =
+      "https://www.google.com/maps/dir/?" + params.toString();
+
+  }, () => {
+    $("routeStatus").textContent =
+      "Location permission needed. Allow location access and try again.";
+  }, {
+    enableHighAccuracy: true,
+    timeout: 15000
+  });
 };
 
 $("saveStartBtn").onclick = () => {
   const v = $("startAddress").value.trim();
   if (!v) return;
-  start = {label: v};
+
+  start = { label: v };
+
   localStorage.setItem("myroute_start", JSON.stringify(start));
   render();
 };
 
 $("locateBtn").onclick = () => {
   if (!navigator.geolocation) {
-    $("startStatus").textContent = "Location is not available in this browser.";
+    $("startStatus").textContent =
+      "Location is not available in this browser.";
     return;
   }
 
-  $("startStatus").textContent = "Requesting location permission…";
+  $("startStatus").textContent =
+    "Requesting location permission...";
 
   navigator.geolocation.getCurrentPosition(p => {
     start = {
@@ -169,12 +231,17 @@ $("locateBtn").onclick = () => {
       lat: p.coords.latitude,
       lng: p.coords.longitude
     };
+
     localStorage.setItem("myroute_start", JSON.stringify(start));
     render();
-  }, err => {
+
+  }, () => {
     $("startStatus").textContent =
       "Could not get location. Allow location access or enter a start address.";
-  }, {enableHighAccuracy: true, timeout: 12000});
+  }, {
+    enableHighAccuracy: true,
+    timeout: 12000
+  });
 };
 
 $("clearDoneBtn").onclick = () => {
@@ -184,7 +251,8 @@ $("clearDoneBtn").onclick = () => {
 
 $("saveRouteBtn").onclick = () => {
   if (!stops.length) {
-    $("routeStatus").textContent = "Add stops before saving a route.";
+    $("routeStatus").textContent =
+      "Add stops before saving a route.";
     return;
   }
 
@@ -196,7 +264,10 @@ $("saveRouteBtn").onclick = () => {
   });
 
   localStorage.setItem("myroute_saved", JSON.stringify(saved));
-  $("routeStatus").textContent = "Route saved on this device.";
+
+  $("routeStatus").textContent =
+    "Route saved on this device.";
+
   render();
 };
 
@@ -207,9 +278,12 @@ $("savedRoutes").onclick = e => {
     if (r) {
       stops = JSON.parse(JSON.stringify(r.stops));
       start = r.start || null;
+
       localStorage.setItem("myroute_start", JSON.stringify(start));
       persist();
-      $("routeStatus").textContent = "Saved route restored.";
+
+      $("routeStatus").textContent =
+        "Saved route restored.";
     }
   }
 };
@@ -220,6 +294,7 @@ $("csvFile").onchange = async e => {
 
   const txt = await f.text();
   const rows = txt.split(/\r?\n/).filter(Boolean);
+
   if (!rows.length) return;
 
   const first = rows[0].split(",").map(x =>
@@ -238,6 +313,7 @@ $("csvFile").onchange = async e => {
 
   addAddresses(data.map(line => {
     const cols = line.match(/("(?:[^"]|"")*"|[^,]*)(,|$)/g) || [line];
+
     return (cols[idx] || line).replace(/,$/, "")
       .trim().replace(/^"|"$/g, "").replace(/""/g, '"');
   }));
@@ -252,9 +328,13 @@ $("exportBtn").onclick = () => {
     ).join("\n");
 
   const a = document.createElement("a");
-  a.href = URL.createObjectURL(new Blob([csv], {type: "text/csv"}));
+  a.href = URL.createObjectURL(
+    new Blob([csv], { type: "text/csv" })
+  );
+
   a.download = "my-route-stops.csv";
   a.click();
+
   URL.revokeObjectURL(a.href);
 };
 
